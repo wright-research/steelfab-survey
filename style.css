@@ -986,7 +986,7 @@ sl-select::part(form-control-label) {
 .grouped-averages-table th {
     background-color: #1c1c1c;
     color: #FFFFFF;
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: center;
     font-weight: 600;
     text-transform: uppercase;
@@ -1004,7 +1004,7 @@ sl-select::part(form-control-label) {
 }
 
 .grouped-averages-table td {
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: center;
     border-bottom: 1px solid #e0e0e0;
     font-weight: 500;
@@ -1064,7 +1064,7 @@ sl-select::part(form-control-label) {
 
     .grouped-averages-table th,
     .grouped-averages-table td {
-        padding: 0.75rem 0.5rem;
+        padding: 0.6rem 0.4rem;
     }
 
     .grouped-averages-table th.group-header {

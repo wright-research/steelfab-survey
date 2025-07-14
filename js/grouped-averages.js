@@ -49,13 +49,37 @@ function calculateGroupedAverages(data) {
 }
 
 /**
+ * Get color class for comparison mode based on ranking within each column
+ * @param {number} value - The current value
+ * @param {number} minValue - The minimum value in this column
+ * @param {number} maxValue - The maximum value in this column
+ * @param {number} itemCount - Total number of items being compared
+ * @returns {string} CSS class name for color
+ */
+function getComparisonModeColorClass(value, minValue, maxValue, itemCount) {
+    // Only apply colors if there are multiple items
+    if (itemCount <= 1) {
+        return 'score-neutral';
+    }
+
+    if (value === maxValue) {
+        return 'score-green'; // Highest value
+    } else if (value === minValue) {
+        return 'score-red'; // Lowest value
+    } else {
+        return 'score-neutral'; // Middle values
+    }
+}
+
+/**
  * Create a table row for the grouped averages
  * @param {string} datasetName - Name of the dataset (e.g., "All Responses", "Filtered")
  * @param {Object} averages - Object with group averages
  * @param {boolean} isFiltered - Whether this is filtered data
+ * @param {Object} coloringData - Optional data for comparative coloring {mode, allAverages, itemCount}
  * @returns {HTMLTableRowElement} The created row element
  */
-function createTableRow(datasetName, averages, isFiltered = false) {
+function createTableRow(datasetName, averages, isFiltered = false, coloringData = null) {
     const row = document.createElement('tr');
     row.className = isFiltered ? 'filtered-row' : 'baseline-row';
 
@@ -73,15 +97,27 @@ function createTableRow(datasetName, averages, isFiltered = false) {
         const average = averages[groupName];
         cell.textContent = average.toFixed(1);
 
-        // Apply conditional formatting if this is filtered data
-        if (isFiltered && baselineAverages[groupName] !== undefined) {
-            const baselineAvg = baselineAverages[groupName];
-            if (average > baselineAvg) {
-                cell.classList.add('score-green');
-            } else if (average < baselineAvg) {
-                cell.classList.add('score-red');
+        // Apply conditional formatting based on mode
+        if (isFiltered) {
+            if (coloringData && coloringData.mode === 'comparison') {
+                // Comparison mode: compare against other selections in this column
+                const columnValues = coloringData.allAverages.map(item => item[groupName]);
+                const minValue = Math.min(...columnValues);
+                const maxValue = Math.max(...columnValues);
+                const colorClass = getComparisonModeColorClass(average, minValue, maxValue, coloringData.itemCount);
+                cell.classList.add(colorClass);
             } else {
-                cell.classList.add('score-neutral');
+                // Baseline mode: compare against baseline
+                if (baselineAverages[groupName] !== undefined) {
+                    const baselineAvg = baselineAverages[groupName];
+                    if (average > baselineAvg) {
+                        cell.classList.add('score-green');
+                    } else if (average < baselineAvg) {
+                        cell.classList.add('score-red');
+                    } else {
+                        cell.classList.add('score-neutral');
+                    }
+                }
             }
         }
 
@@ -132,13 +168,15 @@ function updateGroupedAveragesTable(filters = null) {
         ? window.DrawerModule.getCurrentComparisonMode()
         : 'baseline';
 
-    // Update subtitle visibility based on comparison mode
+    // Update subtitle visibility and text based on comparison mode
     const subtitle = document.getElementById('grouped-averages-subtitle');
     if (subtitle) {
         if (comparisonMode === 'baseline') {
+            subtitle.textContent = 'Conditional formatting of filtered results relative to company baseline.';
             subtitle.classList.remove('hidden');
         } else {
-            subtitle.classList.add('hidden');
+            subtitle.textContent = 'Green indicates highest value, red indicates lowest value per column.';
+            subtitle.classList.remove('hidden');
         }
     }
 
@@ -147,11 +185,25 @@ function updateGroupedAveragesTable(filters = null) {
         // Roles comparison mode - show individual role rows
         const selectedRoles = window.KPIModule.getSelectedComparisonItems('roles');
         if (selectedRoles && selectedRoles.length > 0) {
-            selectedRoles.slice(0, 5).forEach(roleData => {
+            const limitedRoles = selectedRoles.slice(0, 5);
+
+            // Calculate averages for all roles first (for comparative coloring)
+            const allRoleAverages = limitedRoles.map(roleData => {
+                const roleFilteredData = allData.filter(row => row.Job_Role === roleData.csvValue);
+                return calculateGroupedAverages(roleFilteredData);
+            });
+
+            // Create rows with comparative coloring
+            limitedRoles.forEach((roleData, index) => {
                 const roleFilteredData = allData.filter(row => row.Job_Role === roleData.csvValue);
                 if (roleFilteredData.length > 0) {
-                    const roleAverages = calculateGroupedAverages(roleFilteredData);
-                    const roleRow = createTableRow(roleData.displayName, roleAverages, true);
+                    const roleAverages = allRoleAverages[index];
+                    const coloringData = {
+                        mode: 'comparison',
+                        allAverages: allRoleAverages,
+                        itemCount: limitedRoles.length
+                    };
+                    const roleRow = createTableRow(roleData.displayName, roleAverages, true, coloringData);
                     tbody.appendChild(roleRow);
                 }
             });
@@ -169,11 +221,25 @@ function updateGroupedAveragesTable(filters = null) {
         // Location comparison mode - show individual location rows
         const selectedLocations = window.KPIModule.getSelectedComparisonItems('location');
         if (selectedLocations && selectedLocations.length > 0) {
-            selectedLocations.slice(0, 5).forEach(locationData => {
+            const limitedLocations = selectedLocations.slice(0, 5);
+
+            // Calculate averages for all locations first (for comparative coloring)
+            const allLocationAverages = limitedLocations.map(locationData => {
+                const locationFilteredData = allData.filter(row => row.Location === locationData.csvValue);
+                return calculateGroupedAverages(locationFilteredData);
+            });
+
+            // Create rows with comparative coloring
+            limitedLocations.forEach((locationData, index) => {
                 const locationFilteredData = allData.filter(row => row.Location === locationData.csvValue);
                 if (locationFilteredData.length > 0) {
-                    const locationAverages = calculateGroupedAverages(locationFilteredData);
-                    const locationRow = createTableRow(locationData.displayName, locationAverages, true);
+                    const locationAverages = allLocationAverages[index];
+                    const coloringData = {
+                        mode: 'comparison',
+                        allAverages: allLocationAverages,
+                        itemCount: limitedLocations.length
+                    };
+                    const locationRow = createTableRow(locationData.displayName, locationAverages, true, coloringData);
                     tbody.appendChild(locationRow);
                 }
             });
