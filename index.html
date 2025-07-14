@@ -53,6 +53,8 @@
         <div class="grouped-averages-container">
             <div class="grouped-averages-header">
                 <h2>Survey Component Averages</h2>
+                <p class="grouped-averages-subtitle" id="grouped-averages-subtitle">Conditional formatting of filtered
+                    results relative to company baseline.</p>
             </div>
             <div class="grouped-averages-table-wrapper">
                 <table class="grouped-averages-table" id="grouped-averages-table">
@@ -155,21 +157,75 @@
                     </div>
                 </div>
 
-                <!-- Roles Mode Content (placeholder for future) -->
+                <!-- Roles Mode Content -->
                 <div class="roles-mode-container hidden" id="roles-mode-container">
-                    <div class="mode-placeholder">
-                        <p>Roles comparison mode - coming soon!</p>
+                    <div class="comparison-select-content">
+                        <sl-select placeholder="Choose roles to compare" multiple clearable max-options-visible="5"
+                            id="roles-comparison-select">
+                            <sl-option value="accounting">Accounting</sl-option>
+                            <sl-option value="admin-support">Administrative Support</sl-option>
+                            <sl-option value="detailing">Detailing</sl-option>
+                            <sl-option value="document-control">Document Control</sl-option>
+                            <sl-option value="engineering">Engineering</sl-option>
+                            <sl-option value="estimating">Estimating</sl-option>
+                            <sl-option value="exec-leadership">Executive Leadership</sl-option>
+                            <sl-option value="field-operations">Field Operations</sl-option>
+                            <sl-option value="front-office">Front Office</sl-option>
+                            <sl-option value="hr">HR</sl-option>
+                            <sl-option value="it">IT</sl-option>
+                            <sl-option value="other">Other</sl-option>
+                            <sl-option value="precon-sales">Pre-Con/Sales</sl-option>
+                            <sl-option value="programmer">Programmer</sl-option>
+                            <sl-option value="project-mgmt">Project Management</sl-option>
+                            <sl-option value="purchasing">Purchasing</sl-option>
+                            <sl-option value="quality-control">Quality Control</sl-option>
+                            <sl-option value="receiving-super">Receiving Supervisor</sl-option>
+                            <sl-option value="shipping-super">Shipping Supervisor</sl-option>
+                            <sl-option value="shop-employee">Shop Employee</sl-option>
+                            <sl-option value="shop-leadership">Shop Leadership</sl-option>
+                        </sl-select>
                     </div>
                 </div>
 
-                <!-- Location Mode Content (placeholder for future) -->
+                <!-- Location Mode Content -->
                 <div class="location-mode-container hidden" id="location-mode-container">
-                    <div class="mode-placeholder">
-                        <p>Location comparison mode - coming soon!</p>
+                    <div class="comparison-select-content">
+                        <sl-select placeholder="Choose locations to compare" multiple clearable max-options-visible="5"
+                            id="locations-comparison-select">
+                            <sl-option value="allen-tx-o">Allen, TX</sl-option>
+                            <sl-option value="atlanta-ga-o">Atlanta, GA</sl-option>
+                            <sl-option value="austin-tx-o">Austin, TX</sl-option>
+                            <sl-option value="baltimore-md-o">Baltimore, MD (O)</sl-option>
+                            <sl-option value="baltimore-md-s">Baltimore, MD (S)</sl-option>
+                            <sl-option value="brentwood-tn-o">Brentwood, TN</sl-option>
+                            <sl-option value="charleston-sc-o">Charleston, SC</sl-option>
+                            <sl-option value="charlotte-nc-o">Charlotte, NC (Corporate)</sl-option>
+                            <sl-option value="charlotte-nc-s">Charlotte, NC (S)</sl-option>
+                            <sl-option value="dublin-ga-s">Dublin, GA</sl-option>
+                            <sl-option value="durant-ok-s">Durant, OK</sl-option>
+                            <sl-option value="emporia-va-s">Emporia, VA</sl-option>
+                            <sl-option value="fayetteville-nc">Fayetteville, NC</sl-option>
+                            <sl-option value="florence-sc-os">Florence, SC</sl-option>
+                            <sl-option value="oakwood-tx-os">Oakwood, TX</sl-option>
+                            <sl-option value="phoenix-az-o">Phoenix, AZ (O)</sl-option>
+                            <sl-option value="phoenix-az-s">Phoenix, AZ (S)</sl-option>
+                            <sl-option value="portland-or-o">Portland, OR</sl-option>
+                            <sl-option value="raleigh-nc-o">Raleigh, NC</sl-option>
+                            <sl-option value="roanoke-al-os">Roanoke, AL</sl-option>
+                            <sl-option value="specialty-metals">Specialty Metals</sl-option>
+                            <sl-option value="spokane-wa-s">Spokane, WA</sl-option>
+                            <sl-option value="tangent-or-os">Tangent, OR</sl-option>
+                            <sl-option value="washington-dc-o">Washington, DC</sl-option>
+                            <sl-option value="york-pa-s">York, PA</sl-option>
+                            <sl-option value="york-sc-os">York, SC</sl-option>
+                        </sl-select>
                     </div>
                 </div>
             </div>
-        </sl-drawer>
+
+
+    </div>
+    </sl-drawer>
     </div>
 
     <!-- Footer -->

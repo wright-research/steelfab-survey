@@ -8,6 +8,9 @@ class Charts {
             'Q18_cat': 'What one or two things would you change about your work experience at SteelFab?',
             'Q19_cat': 'Please feel free to add any additional thoughts/comments.'
         };
+        this.seriesColors = [
+            '#4A90E2', '#50C878', '#FF6B6B', '#FFB84D', '#9B59B6'
+        ];
     }
 
     // Count occurrences of each category in a column
@@ -140,8 +143,8 @@ class Charts {
         return [categoryName];
     }
 
-    // Create a bar chart with baseline data and optional filtered data
-    createChart(canvasId, baselineData, filteredData = null, title) {
+    // Create a bar chart with datasets
+    createChart(canvasId, datasets, title) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
             console.error(`Canvas element with ID '${canvasId}' not found`);
@@ -155,82 +158,63 @@ class Charts {
             this.chartInstances[canvasId].destroy();
         }
 
-        // Get all unique categories from both datasets
-        const allCategories = new Set();
-        baselineData.forEach(item => allCategories.add(item[0]));
-        if (filteredData) {
-            filteredData.forEach(item => allCategories.add(item[0]));
+        // If no datasets provided, show empty chart
+        if (!datasets || datasets.length === 0) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Select items to see comparison data', canvas.width / 2, canvas.height / 2);
+            return;
         }
 
-        // Convert to sorted array based on baseline data order
-        const categoriesOrder = baselineData.map(item => item[0]);
+        // Get all unique categories from all datasets
+        const allCategories = new Set();
+        datasets.forEach(dataset => {
+            if (dataset.rawData) {
+                dataset.rawData.forEach(item => allCategories.add(item[0]));
+            }
+        });
+
+        // Convert to sorted array based on first dataset order
+        const firstDatasetOrder = datasets[0].rawData ? datasets[0].rawData.map(item => item[0]) : [];
         const labels = Array.from(allCategories)
             .sort((a, b) => {
-                const aIndex = categoriesOrder.indexOf(a);
-                const bIndex = categoriesOrder.indexOf(b);
+                const aIndex = firstDatasetOrder.indexOf(a);
+                const bIndex = firstDatasetOrder.indexOf(b);
                 if (aIndex === -1) return 1;
                 if (bIndex === -1) return -1;
                 return aIndex - bIndex;
             })
             .map(category => this.breakCategoryName(category));
 
-        // Prepare baseline dataset
-        const baselineMap = new Map(baselineData);
-        const baselineRawValues = Array.from(allCategories).map(category => baselineMap.get(category) || 0);
-        const baselineTotalResponses = baselineRawValues.reduce((sum, value) => sum + value, 0);
-        const baselinePercentages = baselineRawValues.map(value =>
-            baselineTotalResponses > 0 ? (value / baselineTotalResponses) * 100 : 0
-        );
-
-        // Prepare datasets array
-        const datasets = [{
-            label: 'All Responses',
-            data: baselinePercentages,
-            backgroundColor: '#ABDBF0',
-            borderColor: '#1c1c1c',
-            borderWidth: 1,
-            barPercentage: 0.7,
-            categoryPercentage: 0.8,
-            rawValues: baselineRawValues,
-            totalResponses: baselineTotalResponses
-        }];
-
-        // Add filtered dataset if provided
-        if (filteredData && filteredData.length > 0) {
-            const filteredMap = new Map(filteredData);
-            const filteredRawValues = Array.from(allCategories).map(category => filteredMap.get(category) || 0);
-            const filteredTotalResponses = filteredRawValues.reduce((sum, value) => sum + value, 0);
-            const filteredPercentages = filteredRawValues.map(value =>
-                filteredTotalResponses > 0 ? (value / filteredTotalResponses) * 100 : 0
+        // Process each dataset
+        const processedDatasets = datasets.map(dataset => {
+            const dataMap = new Map(dataset.rawData);
+            const rawValues = Array.from(allCategories).map(category => dataMap.get(category) || 0);
+            const totalResponses = rawValues.reduce((sum, value) => sum + value, 0);
+            const percentages = rawValues.map(value =>
+                totalResponses > 0 ? (value / totalResponses) * 100 : 0
             );
 
-            datasets.push({
-                label: 'Filtered Results',
-                data: filteredPercentages,
-                backgroundColor: '#4A90E2',
+            return {
+                label: dataset.label,
+                data: percentages,
+                backgroundColor: dataset.backgroundColor,
                 borderColor: '#1c1c1c',
                 borderWidth: 1,
                 barPercentage: 0.7,
                 categoryPercentage: 0.8,
-                rawValues: filteredRawValues,
-                totalResponses: filteredTotalResponses
-            });
-        }
-
-        // If no data, show a message
-        if (baselineData.length === 0) {
-            ctx.fillStyle = '#1c1c1c';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('No data available', canvas.width / 2, canvas.height / 2);
-            return;
-        }
+                rawValues: rawValues,
+                totalResponses: totalResponses
+            };
+        });
 
         this.chartInstances[canvasId] = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: datasets
+                datasets: processedDatasets
             },
             options: {
                 responsive: true,
@@ -244,7 +228,7 @@ class Charts {
                         display: false
                     },
                     legend: {
-                        display: datasets.length > 1,
+                        display: processedDatasets.length > 1,
                         position: 'top',
                         labels: {
                             color: '#1c1c1c',
@@ -338,7 +322,13 @@ class Charts {
             const canvasId = `chart-q${column.replace('Q', '').replace('_cat', '')}`;
 
             // Initialize with baseline data only (no filtered data on initial load)
-            this.createChart(canvasId, chartData, null, this.chartQuestions[column]);
+            const datasets = [{
+                label: 'All Responses',
+                backgroundColor: '#ABDBF0',
+                rawData: chartData
+            }];
+
+            this.createChart(canvasId, datasets, this.chartQuestions[column]);
         });
     }
 
@@ -356,12 +346,10 @@ class Charts {
 
     // Get current filter state and update all charts
     updateCharts() {
-        // Get the current filter state
-        const filters = window.UtilsModule?.getCurrentFiltersForCsv();
-        const hasFilters = filters && (
-            (filters.roleMode === 'compare' && filters.selectedRoles.length > 0) ||
-            (filters.locationMode === 'compare' && filters.selectedLocations.length > 0)
-        );
+        // Get current comparison mode
+        const comparisonMode = (window.DrawerModule && window.DrawerModule.getCurrentComparisonMode)
+            ? window.DrawerModule.getCurrentComparisonMode()
+            : 'baseline';
 
         // Get baseline data
         const baselineData = window.CSVLoaderModule?.getCSVData();
@@ -370,28 +358,106 @@ class Charts {
             return;
         }
 
-        // Get filtered data if filters are applied
-        let filteredData = null;
-        if (hasFilters) {
-            filteredData = window.CSVLoaderModule?.getFilteredData(filters);
-        }
-
-        // Update each chart
+        // Update each chart based on comparison mode
         Object.keys(this.chartQuestions).forEach((column) => {
-            // Calculate baseline category counts
-            const baselineCounts = this.countCategories(baselineData, column);
-            const baselineChartData = this.getAllCategories(baselineCounts);
+            const canvasId = `chart-q${column.replace('Q', '').replace('_cat', '')}`;
 
-            // Calculate filtered category counts if applicable
-            let filteredChartData = null;
+            if (comparisonMode === 'roles') {
+                this.updateChartsForRoles(canvasId, column, baselineData);
+            } else if (comparisonMode === 'location') {
+                this.updateChartsForLocations(canvasId, column, baselineData);
+            } else {
+                this.updateChartsForBaseline(canvasId, column, baselineData);
+            }
+        });
+    }
+
+    // Update charts for baseline mode (preserve existing functionality)
+    updateChartsForBaseline(canvasId, column, baselineData) {
+        // Get the current filter state
+        const filters = window.UtilsModule?.getCurrentFiltersForCsv();
+        const hasFilters = filters && (
+            (filters.roleMode === 'compare' && filters.selectedRoles.length > 0) ||
+            (filters.locationMode === 'compare' && filters.selectedLocations.length > 0)
+        );
+
+        // Calculate baseline category counts
+        const baselineCounts = this.countCategories(baselineData, column);
+        const baselineChartData = this.getAllCategories(baselineCounts);
+
+        // Prepare baseline dataset
+        const datasets = [{
+            label: 'All Responses',
+            backgroundColor: '#ABDBF0',
+            rawData: baselineChartData
+        }];
+
+        // Add filtered dataset if filters are applied
+        if (hasFilters) {
+            const filteredData = window.CSVLoaderModule?.getFilteredData(filters);
             if (filteredData && filteredData.length > 0) {
                 const filteredCounts = this.countCategories(filteredData, column);
-                filteredChartData = this.getAllCategories(filteredCounts);
-            }
+                const filteredChartData = this.getAllCategories(filteredCounts);
 
-            const canvasId = `chart-q${column.replace('Q', '').replace('_cat', '')}`;
-            this.createChart(canvasId, baselineChartData, filteredChartData, this.chartQuestions[column]);
+                datasets.push({
+                    label: 'Filtered Results',
+                    backgroundColor: '#4A90E2',
+                    rawData: filteredChartData
+                });
+            }
+        }
+
+        this.createChart(canvasId, datasets, this.chartQuestions[column]);
+    }
+
+    // Update charts for roles comparison mode
+    updateChartsForRoles(canvasId, column, baselineData) {
+        const selectedRoles = window.KPIModule?.getSelectedComparisonItems('roles');
+        if (!selectedRoles || selectedRoles.length === 0) {
+            // Show empty chart
+            this.createChart(canvasId, [], this.chartQuestions[column]);
+            return;
+        }
+
+        // Create dataset for each role (limit to 5)
+        const datasets = selectedRoles.slice(0, 5).map((roleData, index) => {
+            const roleFilteredData = baselineData.filter(row => row.Job_Role === roleData.csvValue);
+            const roleCounts = this.countCategories(roleFilteredData, column);
+            const roleChartData = this.getAllCategories(roleCounts);
+
+            return {
+                label: roleData.displayName,
+                backgroundColor: this.seriesColors[index % this.seriesColors.length],
+                rawData: roleChartData
+            };
         });
+
+        this.createChart(canvasId, datasets, this.chartQuestions[column]);
+    }
+
+    // Update charts for locations comparison mode
+    updateChartsForLocations(canvasId, column, baselineData) {
+        const selectedLocations = window.KPIModule?.getSelectedComparisonItems('location');
+        if (!selectedLocations || selectedLocations.length === 0) {
+            // Show empty chart
+            this.createChart(canvasId, [], this.chartQuestions[column]);
+            return;
+        }
+
+        // Create dataset for each location (limit to 5)
+        const datasets = selectedLocations.slice(0, 5).map((locationData, index) => {
+            const locationFilteredData = baselineData.filter(row => row.Location === locationData.csvValue);
+            const locationCounts = this.countCategories(locationFilteredData, column);
+            const locationChartData = this.getAllCategories(locationCounts);
+
+            return {
+                label: locationData.displayName,
+                backgroundColor: this.seriesColors[index % this.seriesColors.length],
+                rawData: locationChartData
+            };
+        });
+
+        this.createChart(canvasId, datasets, this.chartQuestions[column]);
     }
 }
 

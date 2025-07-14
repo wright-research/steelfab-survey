@@ -10,6 +10,17 @@ const NUM_COLUMNS = [
 ];
 
 /**
+ * Get current comparison mode from drawer module
+ * @returns {string} Current comparison mode ('baseline', 'roles', 'location')
+ */
+function getCurrentComparisonMode() {
+    if (window.DrawerModule && window.DrawerModule.getCurrentComparisonMode) {
+        return window.DrawerModule.getCurrentComparisonMode();
+    }
+    return 'baseline'; // Default fallback
+}
+
+/**
  * Get color class for filtered average score based on delta from total average
  * @param {number} filteredAverage - The filtered average score
  * @param {number} totalAverage - The total average score (always 82.1)
@@ -47,6 +58,143 @@ function calculateAverageResponse(data) {
     });
 
     return totalCount > 0 ? totalSum / totalCount : 0;
+}
+
+/**
+ * Get selected roles or locations for comparison modes
+ * @param {string} mode - 'roles' or 'location'
+ * @returns {Array} Array of selected items with their data
+ */
+function getSelectedComparisonItems(mode) {
+    if (!window.CSVLoaderModule || !window.CSVLoaderModule.isCSVDataLoaded()) {
+        return [];
+    }
+
+    const allData = window.CSVLoaderModule.getCSVData();
+    const totalAverage = calculateAverageResponse(allData);
+
+    if (mode === 'roles') {
+        const roleSelect = document.getElementById('roles-comparison-select');
+        if (!roleSelect || !roleSelect.value || roleSelect.value.length === 0) {
+            return [];
+        }
+
+        const selectedRoles = roleSelect.value.map(value => {
+            const option = roleSelect.querySelector(`sl-option[value="${value}"]`);
+            return option ? option.getAttribute('data-csv-value') || value : value;
+        }).filter(Boolean);
+
+
+        return selectedRoles.slice(0, 5).map(value => {
+            const roleOption = window.DataModule.ROLE_OPTIONS.find(option => option.value === value);
+            const csvValue = roleOption ? roleOption.csvValue : value;
+            const filteredData = allData.filter(row => row.Job_Role === csvValue);
+            const average = calculateAverageResponse(filteredData);
+
+
+
+            return {
+                displayName: roleOption ? roleOption.text : value,
+                csvValue: csvValue,
+                count: filteredData.length,
+                average: Math.round(average * 10) / 10,
+                totalAverage: totalAverage
+            };
+        });
+    }
+
+    if (mode === 'location') {
+        const locationSelect = document.getElementById('locations-comparison-select');
+        if (!locationSelect || !locationSelect.value || locationSelect.value.length === 0) {
+            return [];
+        }
+
+        const selectedLocations = locationSelect.value.map(value => {
+            const option = locationSelect.querySelector(`sl-option[value="${value}"]`);
+            return option ? option.getAttribute('data-csv-value') || value : value;
+        }).filter(Boolean);
+
+
+        return selectedLocations.slice(0, 5).map(value => {
+            const locationOption = window.DataModule.LOCATION_OPTIONS.find(option => option.value === value);
+            const csvValue = locationOption ? locationOption.csvValue : value;
+            const filteredData = allData.filter(row => row['Location'] === csvValue);
+            const average = calculateAverageResponse(filteredData);
+
+            return {
+                displayName: locationOption ? locationOption.text : value,
+                csvValue: csvValue,
+                count: filteredData.length,
+                average: Math.round(average * 10) / 10,
+                totalAverage: totalAverage
+            };
+        });
+    }
+
+    return [];
+}
+
+/**
+ * Get color class for comparison mode based on ranking
+ * @param {number} value - The current value
+ * @param {number} minValue - The minimum value in the set
+ * @param {number} maxValue - The maximum value in the set
+ * @param {number} itemCount - Total number of items
+ * @returns {string} CSS class name for color
+ */
+function getComparisonModeColorClass(value, minValue, maxValue, itemCount) {
+    // Only apply colors if there are multiple items
+    if (itemCount <= 1) {
+        return 'score-neutral';
+    }
+
+    if (value === maxValue) {
+        return 'score-green'; // Highest value
+    } else if (value === minValue) {
+        return 'score-red'; // Lowest value
+    } else {
+        return 'score-neutral'; // Middle values
+    }
+}
+
+/**
+ * Create KPI HTML for roles or location comparison mode
+ * @param {string} mode - 'roles' or 'location'
+ * @param {Array} items - Array of selected items with their data
+ * @returns {string} HTML string for comparison mode KPI display
+ */
+function createComparisonModeKPIHTML(mode, items) {
+    if (!items || items.length === 0) {
+        return '<div class="kpi-container kpi-comparison-empty">Select ' +
+            (mode === 'roles' ? 'roles' : 'locations') +
+            ' to see comparison data</div>';
+    }
+
+    const modeLabel = mode === 'roles' ? 'Role' : 'Location';
+
+    // Calculate min and max values for color coding
+    const averages = items.map(item => item.average);
+    const minAverage = Math.min(...averages);
+    const maxAverage = Math.max(...averages);
+
+    const cardsHTML = items.map(item => `
+        <div class="kpi-card kpi-comparison-card">
+            <div class="kpi-comparison-header">${item.displayName}</div>
+            <div class="kpi-value">${item.count}</div>
+            <div class="kpi-label">Responses</div>
+            <div class="kpi-value ${getComparisonModeColorClass(item.average, minAverage, maxAverage, items.length)}">${item.average}</div>
+            <div class="kpi-label">Average Score</div>
+        </div>
+    `).join('');
+
+    return `
+        <div class="kpi-container kpi-comparison-mode">
+            <div class="kpi-comparison-title">${modeLabel} Comparison</div>
+            <div class="kpi-comparison-cards">
+                ${cardsHTML}
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -162,8 +310,20 @@ function updateKPIDisplay() {
     const kpiContainer = document.getElementById('kpi-container');
     if (!kpiContainer) return;
 
-    const kpiData = getCurrentKPIData();
-    kpiContainer.innerHTML = createKPIHTML(kpiData);
+    const comparisonMode = getCurrentComparisonMode();
+
+    // Handle comparison modes differently
+    if (comparisonMode === 'roles') {
+        const selectedRoles = getSelectedComparisonItems('roles');
+        kpiContainer.innerHTML = createComparisonModeKPIHTML('roles', selectedRoles);
+    } else if (comparisonMode === 'location') {
+        const selectedLocations = getSelectedComparisonItems('location');
+        kpiContainer.innerHTML = createComparisonModeKPIHTML('location', selectedLocations);
+    } else {
+        // Default to baseline mode (original functionality)
+        const kpiData = getCurrentKPIData();
+        kpiContainer.innerHTML = createKPIHTML(kpiData);
+    }
 
     // Also update filter status when KPIs are updated
     updateFilterStatus();
@@ -291,5 +451,7 @@ window.KPIModule = {
     getCurrentKPIData,
     updateKPIDisplay,
     initializeKPIDisplay,
-    updateFilterStatus
+    updateFilterStatus,
+    getSelectedComparisonItems,
+    getComparisonModeColorClass
 }; 

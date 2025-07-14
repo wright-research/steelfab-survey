@@ -127,24 +127,87 @@ function updateGroupedAveragesTable(filters = null) {
     // Clear existing rows
     tbody.innerHTML = '';
 
-    // Add baseline row
-    const baselineRow = createTableRow('All Responses', baselineAverages, false);
-    tbody.appendChild(baselineRow);
+    // Get current comparison mode
+    const comparisonMode = (window.DrawerModule && window.DrawerModule.getCurrentComparisonMode)
+        ? window.DrawerModule.getCurrentComparisonMode()
+        : 'baseline';
 
-    // Check if filters are active (using same pattern as KPI module)
-    const hasFilters = filters && (
-        (filters.roleMode === 'compare' && filters.selectedRoles && filters.selectedRoles.length > 0) ||
-        (filters.locationMode === 'compare' && filters.selectedLocations && filters.selectedLocations.length > 0)
-    );
+    // Update subtitle visibility based on comparison mode
+    const subtitle = document.getElementById('grouped-averages-subtitle');
+    if (subtitle) {
+        if (comparisonMode === 'baseline') {
+            subtitle.classList.remove('hidden');
+        } else {
+            subtitle.classList.add('hidden');
+        }
+    }
 
-    if (hasFilters) {
-        // Get filtered data using CSVLoaderModule
-        const filteredData = window.CSVLoaderModule.getFilteredData(filters);
+    // Handle different comparison modes
+    if (comparisonMode === 'roles') {
+        // Roles comparison mode - show individual role rows
+        const selectedRoles = window.KPIModule.getSelectedComparisonItems('roles');
+        if (selectedRoles && selectedRoles.length > 0) {
+            selectedRoles.slice(0, 5).forEach(roleData => {
+                const roleFilteredData = allData.filter(row => row.Job_Role === roleData.csvValue);
+                if (roleFilteredData.length > 0) {
+                    const roleAverages = calculateGroupedAverages(roleFilteredData);
+                    const roleRow = createTableRow(roleData.displayName, roleAverages, true);
+                    tbody.appendChild(roleRow);
+                }
+            });
+        } else {
+            // No roles selected, show empty state
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = Object.keys(QUESTION_GROUPS).length + 1;
+            emptyCell.textContent = 'Select roles to see comparison data';
+            emptyCell.className = 'empty-state';
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
+        }
+    } else if (comparisonMode === 'location') {
+        // Location comparison mode - show individual location rows
+        const selectedLocations = window.KPIModule.getSelectedComparisonItems('location');
+        if (selectedLocations && selectedLocations.length > 0) {
+            selectedLocations.slice(0, 5).forEach(locationData => {
+                const locationFilteredData = allData.filter(row => row.Location === locationData.csvValue);
+                if (locationFilteredData.length > 0) {
+                    const locationAverages = calculateGroupedAverages(locationFilteredData);
+                    const locationRow = createTableRow(locationData.displayName, locationAverages, true);
+                    tbody.appendChild(locationRow);
+                }
+            });
+        } else {
+            // No locations selected, show empty state
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = Object.keys(QUESTION_GROUPS).length + 1;
+            emptyCell.textContent = 'Select locations to see comparison data';
+            emptyCell.className = 'empty-state';
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
+        }
+    } else {
+        // Baseline mode - keep original behavior
+        // Add baseline row
+        const baselineRow = createTableRow('All Responses', baselineAverages, false);
+        tbody.appendChild(baselineRow);
 
-        if (filteredData.length > 0) {
-            const filteredAverages = calculateGroupedAverages(filteredData);
-            const filteredRow = createTableRow('Filtered Results', filteredAverages, true);
-            tbody.appendChild(filteredRow);
+        // Check if filters are active (using same pattern as KPI module)
+        const hasFilters = filters && (
+            (filters.roleMode === 'compare' && filters.selectedRoles && filters.selectedRoles.length > 0) ||
+            (filters.locationMode === 'compare' && filters.selectedLocations && filters.selectedLocations.length > 0)
+        );
+
+        if (hasFilters) {
+            // Get filtered data using CSVLoaderModule
+            const filteredData = window.CSVLoaderModule.getFilteredData(filters);
+
+            if (filteredData.length > 0) {
+                const filteredAverages = calculateGroupedAverages(filteredData);
+                const filteredRow = createTableRow('Filtered Results', filteredAverages, true);
+                tbody.appendChild(filteredRow);
+            }
         }
     }
 }

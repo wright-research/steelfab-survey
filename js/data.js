@@ -312,5 +312,7 @@ window.DataModule = {
     getAvailableLocationsForRoles,
     getAvailableRolesForLocations,
     getFilteredData,
-    csvData: null // Will be set when CSV loads
+    csvData: null, // Will be set when CSV loads
+    ROLE_OPTIONS,
+    LOCATION_OPTIONS
 }; 

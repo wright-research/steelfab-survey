@@ -354,15 +354,51 @@ function checkAndTriggerHtmlDefaults() {
 
         // Check if location filter has HTML default values
         if (locationRadioGroup && locationRadioGroup.value === 'compare') {
+            // Get the HTML default value before populating options
+            const htmlDefaultValue = locationSelect.getAttribute('value') || locationSelect.value;
+
             // Populate location options to ensure they exist
             window.DataModule.populateLocationOptions(locationSelect, []);
+
+            // Explicitly set the HTML default value after populating options
+            if (htmlDefaultValue) {
+                setTimeout(() => {
+                    // Convert to array format expected by multi-select
+                    const valueArray = Array.isArray(htmlDefaultValue) ? htmlDefaultValue : [htmlDefaultValue];
+                    locationSelect.value = valueArray;
+
+                    // Trigger a change event to ensure all listeners are notified
+                    locationSelect.dispatchEvent(new CustomEvent('sl-change', {
+                        detail: { value: valueArray },
+                        bubbles: true
+                    }));
+                }, 100);
+            }
             shouldTriggerUpdate = true;
         }
 
         // Check if role filter has HTML default values  
         if (roleRadioGroup && roleRadioGroup.value === 'compare') {
+            // Get the HTML default value before populating options
+            const htmlDefaultValue = roleSelect.getAttribute('value') || roleSelect.value;
+
             // Populate role options to ensure they exist
             window.DataModule.populateRoleOptions(roleSelect, []);
+
+            // Explicitly set the HTML default value after populating options
+            if (htmlDefaultValue) {
+                setTimeout(() => {
+                    // Convert to array format expected by multi-select
+                    const valueArray = Array.isArray(htmlDefaultValue) ? htmlDefaultValue : [htmlDefaultValue];
+                    roleSelect.value = valueArray;
+
+                    // Trigger a change event to ensure all listeners are notified
+                    roleSelect.dispatchEvent(new CustomEvent('sl-change', {
+                        detail: { value: valueArray },
+                        bubbles: true
+                    }));
+                }, 100);
+            }
             shouldTriggerUpdate = true;
         }
 
@@ -370,7 +406,7 @@ function checkAndTriggerHtmlDefaults() {
         if (shouldTriggerUpdate) {
             setTimeout(() => {
                 updateKPIsAndCharts();
-            }, 150);
+            }, 200);
         }
     }, 100);
 }

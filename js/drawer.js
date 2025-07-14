@@ -146,6 +146,21 @@ function showComparisonMode(mode) {
 
     // Update the explanatory text
     updateComparisonModeExplanation(mode);
+
+    // Update KPI display when comparison mode changes
+    if (window.KPIModule) {
+        window.KPIModule.updateKPIDisplay();
+    }
+
+    // Update grouped averages table when comparison mode changes
+    if (window.updateGroupedAveragesTable) {
+        window.updateGroupedAveragesTable();
+    }
+
+    // Update charts when comparison mode changes
+    if (window.charts) {
+        window.charts.updateCharts();
+    }
 }
 
 /**
@@ -172,7 +187,68 @@ function setupComparisonModeToggle() {
         } else {
             console.warn('Could not find comparison mode radio group');
         }
+
+        // Set up alert monitoring for comparison mode selects
+        setupComparisonModeAlerts();
     }, 100);
+}
+
+/**
+ * Set up alerts for comparison mode selects when more than 5 items are selected
+ */
+function setupComparisonModeAlerts() {
+    const rolesSelect = document.getElementById('roles-comparison-select');
+    const locationsSelect = document.getElementById('locations-comparison-select');
+
+    // Monitor roles select
+    if (rolesSelect) {
+        rolesSelect.addEventListener('sl-change', function (e) {
+            const selectedValues = e.target.value || [];
+            if (selectedValues.length > 5) {
+                window.alert('Please remove one or more roles! You can compare up to 5 roles at a time.');
+            }
+
+            // Update KPI display when roles selection changes
+            if (window.KPIModule) {
+                window.KPIModule.updateKPIDisplay();
+            }
+
+            // Update grouped averages table when roles selection changes
+            if (window.updateGroupedAveragesTable) {
+                window.updateGroupedAveragesTable();
+            }
+
+            // Update charts when roles selection changes
+            if (window.charts) {
+                window.charts.updateCharts();
+            }
+        });
+    }
+
+    // Monitor locations select
+    if (locationsSelect) {
+        locationsSelect.addEventListener('sl-change', function (e) {
+            const selectedValues = e.target.value || [];
+            if (selectedValues.length > 5) {
+                window.alert('Please remove one or more locations! You can compare up to 5 locations at a time.');
+            }
+
+            // Update KPI display when locations selection changes
+            if (window.KPIModule) {
+                window.KPIModule.updateKPIDisplay();
+            }
+
+            // Update grouped averages table when locations selection changes
+            if (window.updateGroupedAveragesTable) {
+                window.updateGroupedAveragesTable();
+            }
+
+            // Update charts when locations selection changes
+            if (window.charts) {
+                window.charts.updateCharts();
+            }
+        });
+    }
 }
 
 /**
