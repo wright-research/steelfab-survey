@@ -1024,6 +1024,13 @@ sl-select::part(form-control-label) {
     font-size: 1.1rem;
 }
 
+/* Overall Satisfaction column styling */
+.grouped-averages-table td.overall-satisfaction-column {
+    background-color: #f5f5f5;
+    /* create a left border in this column */
+    border-left: 1px solid #e0e0e0;
+}
+
 /* Conditional formatting for filtered values */
 .grouped-averages-table td.score-green {
     color: #2E7D32;

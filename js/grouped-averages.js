@@ -94,6 +94,11 @@ function createTableRow(datasetName, averages, isFiltered = false, coloringData 
         const cell = document.createElement('td');
         cell.className = 'group-average';
 
+        // Add medium-gray background to Overall Satisfaction column
+        if (groupName === 'Overall Satisfaction') {
+            cell.classList.add('overall-satisfaction-column');
+        }
+
         const average = averages[groupName];
         cell.textContent = average.toFixed(1);
 
