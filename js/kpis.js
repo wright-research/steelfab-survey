@@ -279,7 +279,7 @@ function createKPIHTML(kpiData) {
                             <div class="kpi-label">Responses<br/>(${Math.round(filteredPercent)}% of total)</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-value ${getAverageScoreColorClass(averageFilteredResponse, 82.1)}">${averageFilteredResponse}</div>
+                            <div class="kpi-value ${getAverageScoreColorClass(averageFilteredResponse, averageResponse)}">${averageFilteredResponse}</div>
                             <div class="kpi-label">Average Overall Score</div>
                         </div>
                     </div>
