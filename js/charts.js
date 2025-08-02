@@ -153,6 +153,23 @@ class Charts {
 
         const ctx = canvas.getContext('2d');
 
+        // Get device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+
+        // Get display size
+        const rect = canvas.getBoundingClientRect();
+
+        // Set actual size in memory (scaled up for retina)
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        // Scale back down using CSS
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+
+        // Scale the drawing context so everything is drawn at the correct size
+        ctx.scale(dpr, dpr);
+
         // Destroy existing chart if it exists
         if (this.chartInstances[canvasId]) {
             this.chartInstances[canvasId].destroy();
@@ -162,9 +179,17 @@ class Charts {
         if (!datasets || datasets.length === 0) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#666';
-            ctx.font = '14px Arial';
+            ctx.font = '24px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Select items to see comparison data', canvas.width / 2, canvas.height / 2);
+            ctx.textBaseline = 'middle';
+            
+
+
+            // Center the text properly (using CSS dimensions, not scaled canvas dimensions)
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2; 
+            ctx.fillText('Select items to see comparison data', centerX, centerY);           
+            
             return;
         }
 
