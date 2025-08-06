@@ -545,7 +545,7 @@ class Charts {
                 const selectedRoles = window.KPIModule?.getSelectedComparisonItems('roles');
                 const roleData = selectedRoles?.find(role => role.displayName === datasetLabel);
                 if (roleData) {
-                    filteredData = baselineData.filter(row => row.Role === roleData.csvValue);
+                    filteredData = baselineData.filter(row => row.Job_Role === roleData.csvValue);
                 }
             } else if (comparisonMode === 'location') {
                 const selectedLocations = window.KPIModule?.getSelectedComparisonItems('location');
